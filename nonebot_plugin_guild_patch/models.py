@@ -8,15 +8,18 @@ from nonebot.adapters.onebot.v11 import (
     NoticeEvent,
 )
 from nonebot.log import logger
+from nonebot.exception import NoLogException
 from pydantic import BaseModel, Field, parse_obj_as, validator
 from typing_extensions import Literal
+
+from .config import guild_patch_config
 
 Event_T = TypeVar("Event_T", bound=Type[Event])
 
 
 def register_event(event: Event_T) -> Event_T:
     Adapter.add_custom_model(event)
-    logger.opt(colors=True).trace(
+    logger.opt(colors=True).debug(
         f"Custom event <e>{event.__event__!r}</e> registered "
         f"from class <g>{event.__qualname__!r}</g>"
     )
@@ -44,6 +47,12 @@ class GuildMessageEvent(MessageEvent):
             return str(parse_obj_as(Message, raw_message))
         raise ValueError("unknown raw message type")
 
+    def get_log_string(self) -> str:
+        if not guild_patch_config.enable_guild_event_log:
+            raise NoLogException(adapter_name='nonebot-adapter-onebot')
+        else:
+            return super().get_log_string()
+
 
 class ReactionInfo(BaseModel):
     emoji_id: str
@@ -67,6 +76,12 @@ class ChannelNoticeEvent(NoticeEvent):
 
     sub_type: None = None
 
+    def get_log_string(self) -> str:
+        if not guild_patch_config.enable_guild_event_log:
+            raise NoLogException(adapter_name='nonebot-adapter-onebot')
+        else:
+            return super().get_log_string()
+
 
 @register_event
 class MessageReactionUpdatedNoticeEvent(ChannelNoticeEvent):
@@ -74,6 +89,12 @@ class MessageReactionUpdatedNoticeEvent(ChannelNoticeEvent):
     notice_type: Literal["message_reactions_updated"]
     message_id: str
     current_reactions: Optional[List[ReactionInfo]] = None
+
+    def get_log_string(self) -> str:
+        if not guild_patch_config.enable_guild_event_log:
+            raise NoLogException(adapter_name='nonebot-adapter-onebot')
+        else:
+            return super().get_log_string()
 
 
 class SlowModeInfo(BaseModel):
@@ -111,6 +132,12 @@ class ChannelUpdatedNoticeEvent(ChannelNoticeEvent):
     old_info: ChannelInfo
     new_info: ChannelInfo
 
+    def get_log_string(self) -> str:
+        if not guild_patch_config.enable_guild_event_log:
+            raise NoLogException(adapter_name='nonebot-adapter-onebot')
+        else:
+            return super().get_log_string()
+
 
 @register_event
 class ChannelCreatedNoticeEvent(ChannelNoticeEvent):
@@ -119,6 +146,12 @@ class ChannelCreatedNoticeEvent(ChannelNoticeEvent):
     operator_id: int
     channel_info: ChannelInfo
 
+    def get_log_string(self) -> str:
+        if not guild_patch_config.enable_guild_event_log:
+            raise NoLogException(adapter_name='nonebot-adapter-onebot')
+        else:
+            return super().get_log_string()
+
 
 @register_event
 class ChannelDestroyedNoticeEvent(ChannelNoticeEvent):
@@ -126,3 +159,22 @@ class ChannelDestroyedNoticeEvent(ChannelNoticeEvent):
     notice_type: Literal["channel_destroyed"]
     operator_id: int
     channel_info: ChannelInfo
+
+    def get_log_string(self) -> str:
+        if not guild_patch_config.enable_guild_event_log:
+            raise NoLogException(adapter_name='nonebot-adapter-onebot')
+        else:
+            return super().get_log_string()
+
+
+__all__ = [
+    'GuildMessageEvent',
+    'ChannelNoticeEvent',
+    'MessageReactionUpdatedNoticeEvent',
+    'ChannelUpdatedNoticeEvent',
+    'ChannelCreatedNoticeEvent',
+    'ChannelDestroyedNoticeEvent',
+    'ReactionInfo',
+    'SlowModeInfo',
+    'ChannelInfo'
+]
